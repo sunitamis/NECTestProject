@@ -1,0 +1,262 @@
+<?php
+require_once('connect.php');
+
+	class form1 extends connect
+	{
+
+/**
+*@desc Form Open Function to print HTML Form tag details
+*@param $method - pass method get/post
+*@param $action - pass page - name where your data will get submitted
+*@param $extra - pass any extra attribute of a Form if required  
+**/
+		function form_open($method,$action,$extra)
+		{
+		$str = "<form method='$method' action='$action'";
+//It doesn't have any closing bracket as it is to be appended
+
+		if(is_array($extra))
+//'is_array(arr_var_name)' checks whether array contains any data
+		{
+			foreach($extra as $key=>$val)
+			{
+				$str .= $val . " "; //'.=' is used for appending string to an existing one			
+			}
+		}
+		echo $str.=">";	
+		}
+
+
+//<input type="" name="" id="" class="" value="" placeholder="" />
+		function input($type,$name,$place,$value,$extra)
+		{
+			$str="<input type='$type' name='$name' id='$name' class='$name' placeholder='$place' value='$value'";
+		
+		if(is_array($extra))
+		{
+			foreach($extra as $val)
+			{
+				$str .= $val . " "; 
+			}
+		}
+		echo $str.="/>";
+		}
+
+//To close a Form using function
+		function form_close()
+		{	
+			echo "</form>";		
+		} 
+//To Upload a file using function		
+		function ImageUpload($image,$path){
+			$imageName = $image['name'];
+			$uniqueName = date("d-m-Y").time().$imageName;
+			$source = $image['tmp_name'];
+			$destination = $path.$uniqueName;		
+			move_uploaded_file($source,$destination);
+//To upload a file this move_uploaded_file(src,dest)
+			return $uniqueName;
+		}
+
+//insert into table_name(fields) values (value)
+//insert into b_login(log_email,log_user,log_gender) values(email,user,gender)
+		function insert($table,$field,$value){
+			$sql = "insert into $table ($field) values ($value)";
+			$this->conn->query($sql) or die($this->conn->error);	
+		}
+
+//Function for selecting fields
+		function select($field,$table,$condition){
+			$str = "select $field from $table where $condition";
+			$result = $this->conn->query($str) or die($this->conn->error);
+
+			/*echo "<pre>";
+			print_r($result);
+			echo "</pre>";*/
+
+			if($result->num_rows==0){
+				//echo "No Records";
+				return "No Records";
+			}
+			else{
+				while($row = $result->fetch_array(MYSQL_NUM))
+/*
+**To check whether the row contains any data, while loop is used
+**fetch_array() or MYSQL_BOTH is a function in Mysqli , it returns rows data in mixed array format
+**fetch_array(MYSQL_NUM) returns row data in Numeric Array
+**fetch_array(MYSQL_ASSOC) returns row data in Associative Array
+**field_count-> total selected fields
+**[num_rows]-> total records as per query
+*/
+				{
+					/*echo "<pre>";
+					print_r($row);
+					echo "</pre>";*/
+					$data[] = $row	;	
+				}			
+					/*echo "<pre>";
+					print_r($data);
+					echo "</pre>";*/
+					return $data;
+			}
+		
+
+		}
+
+		function login($table,$field_user,$field_pass,$post_user,$post_pass)
+		{
+//select log_pass from b_login where log_user = 'sunita'
+			
+//select $field_pass from b_login where $field_user ='$post_user'
+
+			$ans = $this->select($field_pass,$table,"$field_user='$post_user'");
+				
+			//print_r($ans);
+			if($ans == "No Records"){
+				return "Wrong Username";
+		
+			}	
+			else{
+				if($ans[0][0]==sha1($post_pass)){
+					return 1;
+
+				}
+				else{
+
+					return "Wrong Password";
+				}
+				
+			}
+		}
+
+
+		function dynamic_dropdown($field,$table,$condition,$name)
+		{
+		//select lib_id,lib_name from b_lib where lib_byid = '$uid' and lib_type = '2'
+
+		$ans = $this->select($field,$table,$condition);
+
+		//print_r($ans);
+			if($ans == "No Records")
+			{
+				echo "<select>
+				<option> No data </option>
+				</select>";
+			}
+			else
+			{
+				echo "<select name='$name' class='$name' id='$name'>";
+				foreach($ans as $value)
+				{
+					echo "<option value='$value[0]'>$value[1]</option>";
+				}
+				echo "</select>";
+			}
+	
+		}
+
+		function textarea($name,$row,$col,$type,$value,$extra)
+		{
+			$str = "<textarea name='$name' id='$name' class=$name rows='$row' cols='$col'					placeholder='$type'";
+			
+			if(is_array($extra))
+			{
+				foreach($extra as $val)
+				{
+					$str .= $val;
+				}
+			}
+			
+			$str .= ">$value</textarea>";
+				echo $str;
+		}
+
+//To check the data entered is numeric
+		function validate_no($data,$range)
+		{
+			$pattern = "/^[0-9]{".$range."}$/";
+			//preg_match() is a function which matches a data to a particular pattern
+			//Here it returns 1 for false and o for true
+			if(!preg_match($pattern,$data))
+			{
+				return 1;
+			}
+			else 
+			{
+				return 0;
+			}
+			
+		}
+		
+//To validate email id 
+		function validate_email($email)
+		{
+			$pattern = '/^[a-zA-Z][a-zA-Z0-9_.]+@[a-zA-Z0-9_.]+\.[a-z]{2,4}$/';
+			if(!preg_match($pattern,$email))
+			{
+				return 1;
+			} else 
+			{
+				return 0;
+			}
+		}
+		
+//To validate Username
+		function validate_uname($uname)
+		{
+			$pattern = '/^[a-zA-Z][a-zA-Z0-9_.]{4,10}$/';
+				if(!preg_match($pattern,$uname))
+			{
+				return 1;
+			} else 
+			{
+				return 0;
+			}
+		}
+
+		function listuser()
+		{
+		$ans = $this->select("log_image,log_user,log_active,log_id","b_login","log_status!=1");
+		//print_r($ans);
+		
+		if($ans == 'No Records')
+		{
+			echo "No User Found";
+		}
+		else
+		{	
+			echo "<table border=1 align='center'>";
+			$header=array("Image","Username","Active/Banned");
+			foreach($header as $val)
+			{
+				echo "<th>$val</th>";
+			}
+				foreach($ans as $value)
+				{	
+					echo "<tr>";
+					echo "<td><img src='../upload/$value[0]' width='60' height='60'/></td>";
+					echo "<td>$value[1]</td>";
+						if($value[2]==1)
+						{
+						echo "<td><a class='userid' id='uid-$value[3]'>Active</a></td>";
+						}
+						else
+						{
+						echo "<td><a class='userid' id='uid-$value[3]'>Banned</a></td>";
+						}
+					echo "</tr>";
+				}
+			echo "</table>";
+		}
+					
+		}
+
+		function exe($sql)
+		{
+			$this->conn->query($sql) or die($this->conn->error);
+		}
+	}//Class end
+	
+$obj=new form1();
+
+?>
